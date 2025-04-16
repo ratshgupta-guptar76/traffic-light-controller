@@ -34,7 +34,25 @@ module intersection_controller_tb;
     );
 
     // Clock generation (50 MHz)
-    always #10 clk = ~clk; // 10ns period => 50MHz clock
+    always #10 clk = ~clk; // 20ns period -> 50MHz
+
+    // Button/sensor press task
+    task press_button(input reg button);
+        begin
+            button = 1;
+            #50000;
+            button = 0;
+        end
+    endtask
+
+    // Sensor trigger task
+    task trigger_sensor(input reg sensor);
+        begin
+            sensor = 1;
+            #50000;
+            sensor = 0;
+        end
+    endtask
 
     // Testbench procedure
     initial begin
@@ -46,41 +64,35 @@ module intersection_controller_tb;
         pd_button_ns = 0;
         pd_button_ew = 0;
 
-        // Dump waveforms for GTKWave
+        // Dump waveforms
         $dumpfile("waveform.vcd");
         $dumpvars(0, intersection_controller_tb);
+        $dumpvars(0, dut);
 
         // Reset system
         #50;
+        rst = 1;
+        #100;
         rst = 0;
 
-        // Scenario 1: No cars, no pedestrians
+        // Scenario 1: Idle state
         #100000;
 
-        // Scenario 2: North-South vehicle detected
-        ns_sensor = 1;
-        #50000;
-        ns_sensor = 0;
+        // Scenario 2: NS car triggers sensor
+        trigger_sensor(ns_sensor);
 
-        // Scenario 3: East-West vehicle detected
-        ew_sensor = 1;
-        #50000;
-        ew_sensor = 0;
+        // Scenario 3: EW car triggers sensor
+        trigger_sensor(ew_sensor);
 
-        // Scenario 4: Pedestrian request North-South
-        pd_button_ns = 1;
-        #50000;
-        pd_button_ns = 0;
+        // Scenario 4: Pedestrian presses NS button
+        press_button(pd_button_ns);
 
-        // Scenario 5: Pedestrian request East-West
-        pd_button_ew = 1;
-        #50000;
-        pd_button_ew = 0;
+        // Scenario 5: Pedestrian presses EW button
+        press_button(pd_button_ew);
 
-        // Let simulation run for a while
+        // Wait and observe
         #500000;
 
-        // End simulation
         $finish;
     end
 endmodule
